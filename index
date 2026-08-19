@@ -417,12 +417,13 @@
 
       <div class="form-item">
         <label for="input-movies">夏末电影节播放名单</label>
-        <textarea id="input-movies" rows="6" placeholder="请输入你想看的电影...">Mamma Mia!
-Finding Emily
+        <textarea id="input-movies" rows="6" placeholder="请输入你想看的电影...">印第安夏日
 Linda! Landa! Linda!
-The Summer I Turned Pretty
-Call Me By Your Name
-Aftersun
+Ten Things I Hate About You
+That Summer in Paris
+Notting Hill
+Gilmore Girls
+La La Land
 </textarea>
       </div>
     </div>
