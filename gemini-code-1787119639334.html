@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>End-of-Summer Movie Festival</title>
+  
+  <!-- 引入复古加粗连笔英文字体与复古衬线字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,700;1,700&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --text-brown: #5e2819;    /* 铅笔红棕字色 */
+      --accent-brown: #8c4d28;  /* 焦糖暖棕色 */
+      --paper-cream: #faf7ed;   /* 柔和手账纸白 */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      color: var(--text-brown);
+      overflow-x: hidden;
+    }
+
+    /* 阶段一：首页全屏海报展示 */
+    #home-stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      perspective: 1200px;
+      cursor: pointer;
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .main-poster {
+      width: 100vw;
+      height: 100vh;
+      object-fit: fill; 
+      display: block;
+      transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), filter 1s ease;
+    }
+
+    /* 童话开门转场 */
+    #home-stage.opening {
+      opacity: 0;
+      transform: scale(1.12) rotateX(3deg);
+      pointer-events: none;
+    }
+
+    #home-stage.opening .main-poster {
+      filter: blur(8px) brightness(1.2);
+    }
+
+    /* 初始轻触唤醒提示（位置已上调至 bottom: 110px，避免遮挡海报文字） */
+    #start-hint {
+      position: absolute;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(5px);
+      padding: 9px 24px;
+      border-radius: 20px;
+      color: #3b190f;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transition: opacity 0.6s ease;
+      animation: pulseHint 2s infinite alternate;
+      z-index: 105;
+    }
+
+    @keyframes pulseHint {
+      0% { opacity: 0.65; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+    }
+
+    /* 信封外层容器 */
+    .envelope-popup {
+      position: absolute;
+      width: min(200px, 48vw);
+      cursor: pointer;
+      opacity: 0;
+      z-index: 101;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      perspective: 1000px;
+    }
+
+    /* 信封内层图片（3D 纸张卷曲质感） */
+    .envelope-inner {
+      width: 100%;
+      height: auto;
+      transform-style: preserve-3d;
+      transition: transform 0.3s ease, filter 0.3s ease;
+      display: block;
+    }
+
+    .envelope-inner img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: block;
+    }
+
+    /* 纸张随气流 3D 卷曲动画 */
+    .paper-flutter {
+      animation: paperCurlFlutter 3.8s ease-in-out forwards;
+    }
+
+    @keyframes paperCurlFlutter {
+      0% {
+        transform: rotateX(35deg) rotateY(-45deg) rotateZ(-20deg) skewX(-12deg);
+      }
+      30% {
+        transform: rotateX(-30deg) rotateY(40deg) rotateZ(25deg) skewX(10deg);
+      }
+      65% {
+        transform: rotateX(25deg) rotateY(-20deg) rotateZ(-12deg) skewY(-8deg);
+      }
+      100% {
+        transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg);
+      }
+    }
+
+    /* 到达中央后静止悬浮状态 */
+    .envelope-popup.ready {
+      opacity: 1 !important;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) !important;
+      animation: centerIdleFloat 3s ease-in-out infinite alternate;
+    }
+
+    .envelope-popup.ready .envelope-inner {
+      transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) !important;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+    }
+
+    .envelope-popup:hover .envelope-inner {
+      transform: scale(1.08) rotate(-2deg) !important;
+      filter: brightness(1.08) drop-shadow(0 0 18px rgba(255, 235, 150, 0.9)) !important;
+    }
+
+    /* 点击爆裂特效 */
+    .envelope-popup.burst {
+      animation: magicBurst 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+      pointer-events: none;
+    }
+
+    @keyframes centerIdleFloat {
+      0% { transform: translate(-50%, -50%) translateY(0px) rotate(-2deg); }
+      100% { transform: translate(-50%, -50%) translateY(-14px) rotate(2deg); }
+    }
+
+    @keyframes magicBurst {
+      0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); opacity: 1; }
+      50% { transform: translate(-50%, -50%) scale(1.3) rotate(-6deg); filter: brightness(1.6) drop-shadow(0 0 25px rgba(255, 240, 160, 0.9)); opacity: 0.9; }
+      100% { transform: translate(-50%, -50%) scale(2) rotate(12deg); filter: brightness(2) blur(6px); opacity: 0; }
+    }
+
+    /* 阶段二：居中手帐主界面 */
+    #planner-stage {
+      display: none;
+      min-height: 100vh;
+      width: 100%;
+      padding: 40px 16px 80px;
+      background-color: #d1de8c;
+      background-image: url('背景.png');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 30px;
+      opacity: 0;
+      transform: scale(0.92) translateY(30px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #planner-stage.show-planner {
+      display: flex;
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* 上方：手帐卡片 */
+    #poster-preview-card {
+      position: relative;
+      background-image: url('粉色背景.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 38px 28px 30px;
+      border-radius: 8px;
+      box-shadow: 0 16px 35px rgba(60, 80, 45, 0.28);
+      width: 100%;
+      max-width: 480px;
+      border: 3px solid #fce8ee;
+    }
+
+    /* 顶部黑白波点胶带 */
+    .washi-tape {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-1deg);
+      width: 145px;
+      height: 30px;
+      background-color: #fafafa;
+      background-image: radial-gradient(#222 20%, transparent 21%);
+      background-size: 8px 8px;
+      opacity: 0.95;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+
+    /* 卡片内部标题区域 */
+    .poster-header-area {
+      text-align: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .poster-header-area .sub {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.2rem;
+      color: var(--text-brown);
+      font-weight: bold;
+      line-height: 1.2;
+      text-shadow: 0.5px 0.5px 0px rgba(0,0,0,0.15);
+      margin-bottom: 12px;
+    }
+
+    .poster-header-area .main-title {
+      font-family: 'Great Vibes', cursive;
+      font-size: 3.8rem;
+      font-weight: 700;
+      color: var(--text-brown);
+      text-shadow: 1px 1px 0px #fff, 0px 0px 1px var(--text-brown);
+      margin: 0;
+      line-height: 1.15;
+    }
+
+    /* 邮票齿孔白卡 */
+    .stamp-inner {
+      background-color: var(--paper-cream);
+      padding: 28px 20px 24px;
+      position: relative;
+      border: 1px solid #ebd7b3;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      outline: 6px dashed var(--paper-cream);
+      outline-offset: -3px;
+    }
+
+    /* 棕色手绘星星点缀 */
+    .deco-star {
+      position: absolute;
+      color: var(--text-brown);
+      user-select: none;
+      pointer-events: none;
+      line-height: 1;
+    }
+    
+    .star-tr2 { top: 22px; right: 10px; font-size: 0.95rem; transform: rotate(-10deg); }
+    .star-tr3 { top: 12px; right: 32px; font-size: 0.75rem; transform: rotate(25deg); opacity: 0.85; }
+    .star-bl1 { bottom: 12px; right: 18px; font-size: 1.2rem; transform: rotate(-15deg); }
+    .star-bl2 { bottom: 24px; right: 38px; font-size: 0.75rem; transform: rotate(20deg); opacity: 0.85; }
+
+    .plan-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .plan-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 加粗序号手写数字 */
+    .row-num {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.3rem;
+      font-weight: bold;
+      line-height: 1;
+      color: var(--text-brown);
+      width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .row-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-brown);
+      letter-spacing: 0.3px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    /* 下方：实时文本输入控制区域 */
+    .editor-card {
+      background: var(--paper-cream);
+      padding: 24px 28px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 480px;
+      border: 2px solid #8cae88;
+    }
+
+    .form-item {
+      margin-bottom: 14px;
+    }
+
+    .form-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-item label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 5px;
+      color: var(--text-brown);
+      letter-spacing: 1px;
+    }
+
+    .form-item input, .form-item textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #c2d8be;
+      background: #fff;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text-brown);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-item input:focus, .form-item textarea:focus {
+      border-color: var(--accent-brown);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 阶段 1：首屏海报与点击唤醒信封 -->
+  <section id="home-stage">
+    <img src="海报封面.png" alt="夏末电影节海报" class="main-poster">
+    <div id="start-hint">点击屏幕任意位置，获得夏末电影节邀请函~</div>
+    
+    <div class="envelope-popup" id="envelope-popup" title="点击拆开夏末电影节邀请函 ">
+      <div class="envelope-inner" id="envelope-inner">
+        <img src="信封.png" alt="邀请信封">
+      </div>
+    </div>
+  </section>
+
+  <!-- 阶段 2：居中手帐主界面 -->
+  <section id="planner-stage">
+    
+    <div id="poster-preview-card">
+      <div class="washi-tape"></div>
+      
+      <div class="poster-header-area">
+        <div class="sub" id="display-sub">Summer Movie Fest</div>
+        <h1 class="main-title" id="display-title">Things to Screen</h1>
+      </div>
+
+      <div class="stamp-inner">
+        <span class="deco-star star-tr2">★</span>
+        <span class="deco-star star-tr3">★</span>
+        <span class="deco-star star-bl1">★</span>
+        <span class="deco-star star-bl2">★</span>
+
+        <div class="plan-list" id="display-list"></div>
+      </div>
+    </div>
+
+    <div class="editor-card">
+      <div class="form-item">
+        <label for="input-sub">顶部副标题</label>
+        <input type="text" id="input-sub" value="Late Summer Movie Fest" placeholder="例如：Milano's Designs">
+      </div>
+
+      <div class="form-item">
+        <label for="input-title">主标题</label>
+        <input type="text" id="input-title" value="Things to Screen" placeholder="例如：Things to Collect">
+      </div>
+
+      <div class="form-item">
+        <label for="input-movies">夏末电影节播放名单</label>
+        <textarea id="input-movies" rows="6" placeholder="请输入你想看的电影...">Mamma Mia!
+Finding Emily
+Linda! Landa! Linda!
+The Summer I Turned Pretty
+Call Me By Your Name
+Aftersun
+</textarea>
+      </div>
+    </div>
+
+  </section>
+
+  <script>
+    let audioCtx = null;
+    let windGain = null;
+    let flightStarted = false;
+
+    // 1. 初始化 Web Audio API
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // 播放起飞微风呼啸声
+    function startFlightWind(duration = 3.8) {
+      try {
+        initAudio();
+        const bufferSize = audioCtx.sampleRate * (duration + 1);
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.14;
+          b6 = white * 0.115926;
+        }
+
+        const whiteNoise = audioCtx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(260, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(750, audioCtx.currentTime + 1.2);
+        filter.frequency.exponentialRampToValueAtTime(280, audioCtx.currentTime + duration);
+
+        windGain = audioCtx.createGain();
+        windGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        windGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.6);
+        windGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 2.5);
+        windGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+        whiteNoise.connect(filter);
+        filter.connect(windGain);
+        windGain.connect(audioCtx.destination);
+        whiteNoise.start();
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
+    // 停止风声
+    function stopWindInstantly() {
+      if (windGain && audioCtx) {
+        try {
+          windGain.gain.cancelScheduledValues(audioCtx.currentTime);
+          windGain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+        } catch (e) {}
+      }
+    }
+
+    // 点击信封打开童话王国：仅保留纯净轻盈的风铃星光叮咚声
+    function playPureChimeSound() {
+      try {
+        initAudio();
+        
+        // 仙女棒星光风铃声 (F#5, A5, C#6, F#6, G#6)
+        const chimeFreqs = [739.99, 880.00, 1108.73, 1479.98, 1661.22];
+        chimeFreqs.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.07);
+
+          gain.gain.setValueAtTime(0.0, audioCtx.currentTime + idx * 0.07);
+          gain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + idx * 0.07 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + idx * 0.07 + 1.6);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc.start(audioCtx.currentTime + idx * 0.07);
+          osc.stop(audioCtx.currentTime + idx * 0.07 + 1.7);
+        });
+      } catch (e) {}
+    }
+
+    // 2. 随机边缘航线生成
+    function triggerFlight() {
+      if (flightStarted) return;
+      flightStarted = true;
+
+      // 隐藏提示框
+      const hint = document.getElementById('start-hint');
+      if (hint) hint.style.opacity = '0';
+
+      const envelope = document.getElementById('envelope-popup');
+      const inner = document.getElementById('envelope-inner');
+      const flightDuration = 3800;
+
+      // 4 个边缘随机抽取起点
+      const sides = ['top', 'bottom', 'left', 'right'];
+      const startSide = sides[Math.floor(Math.random() * sides.length)];
+
+      let startX, startY;
+      if (startSide === 'top') {
+        startX = (Math.random() * 80 - 40) + 'vw';
+        startY = '-55vh';
+      } else if (startSide === 'bottom') {
+        startX = (Math.random() * 80 - 40) + 'vw';
+        startY = '55vh';
+      } else if (startSide === 'left') {
+        startX = '-55vw';
+        startY = (Math.random() * 80 - 40) + 'vh';
+      } else {
+        startX = '55vw';
+        startY = (Math.random() * 80 - 40) + 'vh';
+      }
+
+      const mid1X = (Math.random() * 60 - 30) + 'vw';
+      const mid1Y = (Math.random() * 60 - 30) + 'vh';
+      const mid2X = (Math.random() * 40 - 20) + 'vw';
+      const mid2Y = (Math.random() * 40 - 20) + 'vh';
+
+      const keyframes = [
+        { transform: `translate(-50%, -50%) translate(${startX}, ${startY}) scale(0.6)`, opacity: 0.6, offset: 0 },
+        { transform: `translate(-50%, -50%) translate(${mid1X}, ${mid1Y}) scale(0.85)`, opacity: 1, offset: 0.4 },
+        { transform: `translate(-50%, -50%) translate(${mid2X}, ${mid2Y}) scale(0.95)`, opacity: 1, offset: 0.75 },
+        { transform: `translate(-50%, -50%) translate(0vw, 0vh) scale(1)`, opacity: 1, offset: 1 }
+      ];
+
+      envelope.style.opacity = '1';
+      inner.classList.add('paper-flutter');
+      startFlightWind(3.8); // 伴随风声起飞
+
+      const anim = envelope.animate(keyframes, {
+        duration: flightDuration,
+        easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        fill: 'forwards'
+      });
+
+      anim.onfinish = () => {
+        stopWindInstantly(); // 飞抵中央风声自然平息
+        envelope.classList.add('ready');
+        inner.classList.remove('paper-flutter');
+      };
+    }
+
+    // 3. 严格绑定：仅当用户点击屏幕任意位置时才起飞
+    window.addEventListener('DOMContentLoaded', () => {
+      syncView();
+      
+      const homeStage = document.getElementById('home-stage');
+      homeStage.addEventListener('click', () => {
+        if (!flightStarted) {
+          triggerFlight();
+        }
+      });
+    });
+
+    // 4. 点击中央信封：仅播放风铃叮咚声并优雅翻开手帐
+    document.getElementById('envelope-popup').addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止冒泡
+      stopWindInstantly();
+      playPureChimeSound(); // 播放纯净风铃声
+
+      const envelope = document.getElementById('envelope-popup');
+      const homeStage = document.getElementById('home-stage');
+      const plannerStage = document.getElementById('planner-stage');
+
+      envelope.classList.add('burst');
+
+      setTimeout(() => {
+        homeStage.classList.add('opening');
+      }, 250);
+
+      setTimeout(() => {
+        homeStage.style.display = 'none';
+        plannerStage.classList.add('show-planner');
+        syncView();
+      }, 800);
+    });
+
+    // 5. 实时响应输入
+    const inputs = ['input-sub', 'input-title', 'input-movies'];
+    inputs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', syncView);
+    });
+
+    function syncView() {
+      const sub = document.getElementById('input-sub').value;
+      const title = document.getElementById('input-title').value;
+      const lines = document.getElementById('input-movies').value.split('\n').filter(l => l.trim() !== '');
+
+      document.getElementById('display-sub').textContent = sub;
+      document.getElementById('display-title').textContent = title;
+
+      const listContainer = document.getElementById('display-list');
+      listContainer.innerHTML = '';
+
+      lines.forEach((line, index) => {
+        const row = document.createElement('div');
+        row.className = 'plan-row';
+        
+        const num = document.createElement('div');
+        num.className = 'row-num';
+        num.textContent = (index + 1);
+
+        const text = document.createElement('div');
+        text.className = 'row-text';
+        text.textContent = line;
+
+        row.appendChild(num);
+        row.appendChild(text);
+        listContainer.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
